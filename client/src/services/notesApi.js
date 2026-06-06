@@ -1,4 +1,4 @@
-const API = "http://localhost:5000/api/notes";
+const API = "https://note-flow-resa.onrender.com";
 
 export const getNotes = async () => {
   const res = await fetch(API);
