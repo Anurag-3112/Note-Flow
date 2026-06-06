@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Editor from "./components/Editor";
-import { getNotes, createNote, updateNote, deleteNote } from "./services/notesApi";
+import {
+  getNotes,
+  createNote,
+  updateNote,
+  deleteNote,
+} from "./services/notesApi";
 
 function App() {
   const [notes, setNotes] = useState([]);
@@ -14,9 +19,14 @@ function App() {
   const loadNotes = async () => {
     try {
       const data = await getNotes();
-      setNotes(data);
+
+      console.log("API Response:", data);
+      console.log("Is Array:", Array.isArray(data));
+
+      setNotes(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.log(error);
+      console.error("Error loading notes:", error);
+      setNotes([]);
     }
   };
 
@@ -26,70 +36,79 @@ function App() {
 
   const selectNote = (note) => {
     setSelectedNote(note);
-    setTitle(note.title);
-    setContent(note.content);
+    setTitle(note?.title || "");
+    setContent(note?.content || "");
   };
 
   const newNote = async () => {
     try {
       const noteData = {
         title: "Untitled",
-        content: "<p></p>"
+        content: "<p></p>",
       };
+
       const created = await createNote(noteData);
+
       setSelectedNote(created);
-      setTitle(created.title);
-      setContent(created.content);
-      loadNotes();
+      setTitle(created?.title || "");
+      setContent(created?.content || "");
+
+      await loadNotes();
     } catch (error) {
-      console.log(error);
+      console.error("Error creating note:", error);
     }
   };
 
   useEffect(() => {
     if (!selectedNote) return;
+
     const timeout = setTimeout(async () => {
       try {
         const noteData = {
           title: title || "Untitled",
-          content: content || "<p></p>"
+          content: content || "<p></p>",
         };
-        await updateNote( selectedNote._id, noteData );
-        loadNotes();
+
+        await updateNote(selectedNote._id, noteData);
+        await loadNotes();
       } catch (error) {
-        console.log(error);
+        console.error("Error updating note:", error);
       }
     }, 1000);
+
     return () => clearTimeout(timeout);
   }, [title, content]);
 
   const handleDelete = async (e, id) => {
     try {
       e.stopPropagation();
+
       await deleteNote(id);
+
       if (selectedNote?._id === id) {
         setSelectedNote(null);
         setTitle("");
         setContent("");
       }
+
       await loadNotes();
     } catch (error) {
-      console.log(error);
+      console.error("Error deleting note:", error);
     }
   };
 
-  const filteredNotes = notes.filter(note => {
-    return (
-      note.title
-        .toLowerCase()
-        .includes(search.toLowerCase())
-      ||
-      note.content
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    );
-  });
+  const filteredNotes = Array.isArray(notes)
+    ? notes.filter((note) => {
+        const noteTitle = note?.title || "";
+        const noteContent = note?.content || "";
+        const searchText = search.toLowerCase();
 
+        return (
+          noteTitle.toLowerCase().includes(searchText) ||
+          noteContent.toLowerCase().includes(searchText)
+        );
+      })
+    : [];
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
@@ -104,29 +123,25 @@ function App() {
         setDarkMode={setDarkMode}
         newNote={newNote}
       />
-      {
-        !selectedNote && (
-          <div className="empty-state">
-            <h1>Select a note</h1>
-            <p>
-              Choose a note or create a new one
-            </p>
-          </div>
-        )
-      }
-      {
-        selectedNote && (
-          <Editor
-            title={title}
-            setTitle={setTitle}
-            content={content}
-            setContent={setContent}
-            setSelectedNote={setSelectedNote}
-            setTitleState={setTitle}
-            setContentState={setContent}
-          />
-        )
-      }
+
+      {!selectedNote && (
+        <div className="empty-state">
+          <h1>Select a note</h1>
+          <p>Choose a note or create a new one</p>
+        </div>
+      )}
+
+      {selectedNote && (
+        <Editor
+          title={title}
+          setTitle={setTitle}
+          content={content}
+          setContent={setContent}
+          setSelectedNote={setSelectedNote}
+          setTitleState={setTitle}
+          setContentState={setContent}
+        />
+      )}
     </div>
   );
 }
