@@ -1,4 +1,4 @@
-const API = "https://note-flow-kwa9.onrender.com";
+const API = "https://note-flow-kwa9.onrender.com/api/notes";
 
 export const getNotes = async () => {
   const res = await fetch(API);
